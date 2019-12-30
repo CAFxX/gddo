@@ -21,13 +21,19 @@ func renderGraph(pdoc *doc.Package, pkgs []database.Package, edges [][2]int) ([]
 	var in, out bytes.Buffer
 
 	fmt.Fprintf(&in, "digraph %s { \n", pdoc.Name)
+	fmt.Fprintf(&in, " rankdir=LR; ranksep=2.5; \n")
 	for i, pkg := range pkgs {
-		fmt.Fprintf(&in, " n%d [label=\"%s\", URL=\"/%s\", tooltip=\"%s\"];\n",
+		color := "#DDDDDD" // light gray
+		if isStdPkg(pkg) {
+			color = "#00ADD8" // "gopher blue"
+		}
+		fmt.Fprintf(&in, " n%d [label=\"%s\", URL=\"/%s\", tooltip=\"%s\", shape=rect, style=filled, color=\"%s\"]; \n",
 			i, pkg.Path, pkg.Path,
-			strings.Replace(pkg.Synopsis, `"`, `\"`, -1))
+			strings.Replace(pkg.Synopsis, `"`, `\"`, -1),
+			color)
 	}
 	for _, edge := range edges {
-		fmt.Fprintf(&in, " n%d -> n%d;\n", edge[0], edge[1])
+		fmt.Fprintf(&in, " n%d -> n%d ;\n", edge[0], edge[1])
 	}
 	in.WriteString("}")
 
@@ -45,4 +51,9 @@ func renderGraph(pdoc *doc.Package, pkgs []database.Package, edges [][2]int) ([]
 	}
 	p = p[i:]
 	return p, nil
+}
+
+func isStdPkg(pkg database.Package) bool {
+	f := strings.SplitN(pkg.Path, "/", 2)
+	return len(f) > 0 && strings.Contains(f[0], ".") == false
 }
